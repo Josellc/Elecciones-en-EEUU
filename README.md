@@ -1,1 +1,1 @@
-- Jose Joaquin LLoerns Caerols. Todos los derechos de autor 2025.
+Storytelling de cómo funciona el sistema de votación  de EEUU para las elecciones presidenciales. Jose Joaquin LLoerns Caerols.
