@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset='utf-8' />
+    <title>Mapbox Storytelling</title>
+    <meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
+    <link rel="icon" type="image/x-icon"
+        href="https://raw.githubusercontent.com/mapbox/assembly/publisher-staging/src/svgs/mapbox.svg">
+    <script src='https://api.tiles.mapbox.com/mapbox-gl-js/v3.8.0/mapbox-gl.js'></script>
+    <link href='https://api.tiles.mapbox.com/mapbox-gl-js/v3.8.0/mapbox-gl.css' rel='stylesheet' />
+    <script src="https://cdn.jsdelivr.net/npm/mapbox-gl-globe-minimap@1.2.0/dist/bundle.js"></script>
+    <script src="https://unpkg.com/scrollama"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Montserrat', sans-serif;
+            overflow-x: hidden; /* Prevenir scroll horizontal */
+        }
+
+        h1, h2, h3 {
+            font-weight: 700;
+            font-variant: small-caps;
+        }
+
+        h3 {
+            font-variant: small-caps;
+        }
+
+        /* Estilo para títulos sin box */
+        .title-only {
+            background: rgba(30, 58, 95, 0.9);
+            color: white;
+            padding: 30px 40px;
+            border-radius: 15px;
+            text-align: center;
+            font-size: 28px;
+            font-weight: 700;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            margin: 0 auto;
+            max-width: 600px;
+        }
+
+        /* Estilo para gráficos sin contenedor */
+        .chart-only {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            margin: 0 auto;
+            max-width: 90vw;
+            max-height: 80vh;
+            padding: 20px;
+            overflow: hidden;
+        }
+
+        .chart-only .flourish-embed {
+            width: 100% !important;
+            height: 70vh !important;
+            min-height: 500px !important;
+        }
+
+        a,
+        a:hover,
+        a:visited {
+            color: #0071bc;
+        }
+
+        #map {
+            top: 0;
+            height: 100vh;
+            width: 100vw;
+            position: fixed;
+        }
+
+        #header {
+            margin: auto;
+            width: 100%;
+            position: relative;
+            z-index: 5;
+        }
+
+        #header h1,
+        #header h2,
+        #header p {
+            margin: 0;
+            padding: 2vh 2vw;
+            text-align: center;
+        }
+
+        #footer {
+            width: 100%;
+            min-height: 5vh;
+            padding-top: 2vh;
+            padding-bottom: 2vh;
+            text-align: center;
+            line-height: 25px;
+            font-size: 13px;
+            position: relative;
+            z-index: 5;
+        }
+
+        #features {
+            padding-top: 10vh;
+            padding-bottom: 10vh;
+        }
+
+        .hidden {
+            visibility: hidden;
+        }
+
+        .centered {
+            width: 50vw;
+            margin: 0 auto;
+        }
+
+        .lefty {
+            width: 33vw;
+            margin-left: 5vw;
+        }
+
+        .righty {
+            width: 33vw;
+            margin-left: 62vw;
+        }
+
+        .fully {
+            width: 100%;
+            margin: auto;
+        }
+
+        .light {
+            color: #ffffff;
+            background-color: #1e3a5f;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+        }
+
+        .dark {
+            color: #ffffff;
+            background-color: #0f2337;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+        }
+
+        .step {
+            padding-bottom: 50vh;
+            /* margin-bottom: 10vh; */
+            opacity: 0.25;
+        }
+
+        .step.active {
+            opacity: 0.9;
+        }
+
+        .step div {
+            padding: 30px 60px;
+            line-height: 25px;
+            font-size: 13px;
+            margin: 20px 0;
+        }
+
+        .step img {
+            width: 100%;
+        }
+
+        /* Layout específico para videos */
+        .step-with-video {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            max-width: 96vw;
+            width: 96%;
+            padding: 0 2vw;
+            box-sizing: border-box;
+            margin: 0 auto;
+            overflow: hidden;
+        }
+
+        .step-with-video .text-content {
+            flex: 0 0 38%;
+            min-width: 250px;
+            max-width: 38%;
+        }
+
+        .step-with-video .chart-content {
+            flex: 0 0 58%;
+            min-width: 350px;
+            max-width: 58%;
+            background: transparent;
+            padding: 8px;
+            box-sizing: border-box;
+        }
+
+        /* Layout para gráficos a la derecha */
+        .step-with-chart {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            max-width: 98vw;
+            width: 98%;
+            padding: 0 1vw;
+            box-sizing: border-box;
+            margin: 0 auto;
+            overflow: hidden;
+        }
+
+        .text-content {
+            flex: 0 0 22%;
+            min-width: 220px;
+            max-width: 22%;
+        }
+
+        .chart-content {
+            flex: 0 0 75%;
+            min-width: 400px;
+            max-width: 75%;
+            background: transparent;
+            padding: 5px;
+            box-sizing: border-box;
+        }
+
+        .chart-content .flourish-embed {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            min-height: 600px;
+            width: 100%;
+        }
+
+        .chart-content iframe {
+            width: 100% !important;
+            min-height: 600px !important;
+            height: 600px !important;
+        }
+
+        /* Estilos específicos para videos */
+        .step-with-video .chart-content video {
+            width: 100%;
+            height: auto;
+            max-height: 420px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            background: #000;
+            object-fit: cover;
+        }
+
+        /* Estilos para videos en contenedor normal */
+        .chart-content video {
+            width: 100%;
+            height: auto;
+            max-height: 280px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px white;
+            background: white;
+            padding: 8px;
+            box-sizing: border-box;
+        }
+
+        /* Prevenir desbordamiento */
+        .chart-content * {
+            max-width: 100%;
+            box-sizing: border-box;
+        }
+
+        /* Asegurar que Flourish se muestre correctamente */
+        .flourish-embed {
+            position: relative !important;
+            width: 100% !important;
+            height: 600px !important;
+        }
+
+        .flourish-embed > div {
+            width: 100% !important;
+            height: 100% !important;
+        }
+
+        /* Forzar que el contenido de Flourish se ajuste */
+        .flourish-embed iframe,
+        .flourish-embed canvas,
+        .flourish-embed svg {
+            max-width: 100% !important;
+            max-height: 100% !important;
+            transform: scale(0.95) !important;
+            transform-origin: top left !important;
+        }
+
+        @media (max-width: 750px) {
+
+            .centered,
+            .lefty,
+            .righty,
+            .fully {
+                width: 90vw;
+                margin: 0 auto;
+            }
+
+            /* Layout responsive para gráficos y videos */
+            .step-with-chart,
+            .step-with-video {
+                flex-direction: column;
+                gap: 20px;
+                padding: 0 15px;
+            }
+
+            .text-content,
+            .chart-content {
+                min-width: 100%;
+                max-width: 100%;
+                flex: none;
+            }
+
+            .chart-content {
+                padding: 10px;
+            }
+
+            .chart-content video {
+                max-height: 450px;
+            }
+            
+            .chart-content iframe {
+                height: 500px !important;
+                min-height: 500px !important;
+            }
+
+            .step-with-video .chart-content video {
+                max-height: 320px;
+            }
+        }
+
+        @media (max-width: 1200px) {
+            .step-with-chart {
+                gap: 8px;
+                padding: 0 5px;
+                width: 96%;
+                max-width: 96vw;
+            }
+            
+            .text-content {
+                flex: 0 0 20%;
+                max-width: 20%;
+                min-width: 200px;
+            }
+            
+            .chart-content {
+                flex: 0 0 77%;
+                max-width: 77%;
+                padding: 3px;
+            }
+            
+            .chart-content iframe,
+            .chart-content video {
+                height: 550px !important;
+                min-height: 550px !important;
+                max-height: 550px;
+            }
+
+            /* Responsive específico para videos */
+            .step-with-video {
+                gap: 10px;
+                padding: 0 8px;
+                width: 94%;
+                max-width: 94vw;
+            }
+
+            .step-with-video .text-content {
+                flex: 0 0 35%;
+                max-width: 35%;
+                min-width: 220px;
+            }
+
+            .step-with-video .chart-content {
+                flex: 0 0 60%;
+                max-width: 60%;
+                padding: 5px;
+            }
+
+            .step-with-video .chart-content video {
+                max-height: 350px;
+            }
+        }
+
+        /* Fix issue on mobile browser where scroll breaks  */
+        .mapboxgl-canvas-container.mapboxgl-touch-zoom-rotate.mapboxgl-touch-drag-pan,
+        .mapboxgl-canvas-container.mapboxgl-touch-zoom-rotate.mapboxgl-touch-drag-pan .mapboxgl-canvas {
+            touch-action: unset;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="map"></div>
+    <div id="story"></div>
+
+    <script src="./config.js"></script>
+    <script>
+        var initLoad = true;
+        var layerTypes = {
+            'fill': ['fill-opacity'],
+            'line': ['line-opacity'],
+            'circle': ['circle-opacity', 'circle-stroke-opacity'],
+            'symbol': ['icon-opacity', 'text-opacity'],
+            'raster': ['raster-opacity'],
+            'fill-extrusion': ['fill-extrusion-opacity'],
+            'heatmap': ['heatmap-opacity']
+        }
+
+        var alignments = {
+            'left': 'lefty',
+            'center': 'centered',
+            'right': 'righty',
+            'full': 'fully'
+        }
+
+        function getLayerPaintType(layer) {
+            var layerType = map.getLayer(layer).type;
+            return layerTypes[layerType];
+        }
+
+        function setLayerOpacity(layer) {
+            var paintProps = getLayerPaintType(layer.layer);
+            paintProps.forEach(function (prop) {
+                var options = {};
+                if (layer.duration) {
+                    var transitionProp = prop + "-transition";
+                    options = { "duration": layer.duration };
+                    map.setPaintProperty(layer.layer, transitionProp, options);
+                }
+                map.setPaintProperty(layer.layer, prop, layer.opacity, options);
+            });
+        }
+
+        var story = document.getElementById('story');
+        var features = document.createElement('div');
+        features.setAttribute('id', 'features');
+
+        var header = document.createElement('div');
+
+        if (config.title) {
+            var titleText = document.createElement('h1');
+            titleText.innerText = config.title;
+            header.appendChild(titleText);
+        }
+
+        if (config.subtitle) {
+            var subtitleText = document.createElement('h2');
+            subtitleText.innerText = config.subtitle;
+            header.appendChild(subtitleText);
+        }
+
+        if (config.byline) {
+            var bylineText = document.createElement('p');
+            bylineText.innerText = config.byline;
+            header.appendChild(bylineText);
+        }
+
+        if (header.innerText.length > 0) {
+            header.classList.add(config.theme);
+            header.setAttribute('id', 'header');
+            story.appendChild(header);
+        }
+
+        config.chapters.forEach((record, idx) => {
+            var container = document.createElement('div');
+            var chapter = document.createElement('div');
+
+            // Caso especial: solo título sin box
+            if (record.titleOnly) {
+                if (record.title) {
+                    var titleElement = document.createElement('h3');
+                    titleElement.innerText = record.title;
+                    titleElement.classList.add('title-only');
+                    container.appendChild(titleElement);
+                }
+            }
+            // Caso especial: solo gráfico sin contenedor
+            else if (record.chartOnly) {
+                var chartContainer = document.createElement('div');
+                chartContainer.classList.add('chart-only');
+                chartContainer.innerHTML = record.chart;
+                
+                // Cargar el script de Flourish
+                if (!document.querySelector('script[src*="flourish.studio"]')) {
+                    var script = document.createElement('script');
+                    script.src = 'https://public.flourish.studio/resources/embed.js';
+                    script.onload = function() {
+                        setTimeout(() => {
+                            if (window.Flourish && window.Flourish.embed) {
+                                window.Flourish.embed();
+                            }
+                        }, 500);
+                    };
+                    document.head.appendChild(script);
+                } else {
+                    setTimeout(() => {
+                        if (window.Flourish && window.Flourish.embed) {
+                            window.Flourish.embed();
+                        }
+                    }, 100);
+                }
+                
+                container.appendChild(chartContainer);
+            }
+            // Si hay un chart, usamos layout de dos columnas
+            else if (record.chart) {
+                var layoutContainer = document.createElement('div');
+                
+                // Detectar si es un video para usar clase específica
+                var isVideo = record.chart.endsWith('.mp4') || record.chart.endsWith('.webm') || record.chart.endsWith('.mov');
+                if (isVideo) {
+                    layoutContainer.classList.add('step-with-video');
+                } else {
+                    layoutContainer.classList.add('step-with-chart');
+                }
+
+                // Contenedor para el texto (lado izquierdo)
+                var textContent = document.createElement('div');
+                textContent.classList.add('text-content');
+                textContent.classList.add(config.theme);
+
+                if (record.title) {
+                    var title = document.createElement('h3');
+                    title.innerText = record.title;
+                    textContent.appendChild(title);
+                }
+
+                if (record.image) {
+                    var image = new Image();
+                    image.src = record.image;
+                    textContent.appendChild(image);
+                }
+
+                if (record.description) {
+                    var story = document.createElement('p');
+                    story.innerHTML = record.description;
+                    textContent.appendChild(story);
+                }
+
+                // Contenedor para el gráfico/video (lado derecho)
+                var chartContent = document.createElement('div');
+                chartContent.classList.add('chart-content');
+                
+                // Detectar si es un video o un embed HTML
+                if (record.chart.endsWith('.mp4') || record.chart.endsWith('.webm') || record.chart.endsWith('.mov')) {
+                    // Es un video
+                    var videoElement = document.createElement('video');
+                    videoElement.src = record.chart;
+                    videoElement.controls = true;
+                    videoElement.autoplay = true;
+                    videoElement.muted = true; // Para permitir autoplay
+                    videoElement.loop = true;
+                    chartContent.appendChild(videoElement);
+                } else {
+                    // Es un embed HTML (Flourish u otro)
+                    chartContent.innerHTML = record.chart;
+                    // Cargar el script de Flourish dinámicamente solo para embeds
+                    if (!document.querySelector('script[src*="flourish.studio"]')) {
+                        var script = document.createElement('script');
+                        script.src = 'https://public.flourish.studio/resources/embed.js';
+                        script.onload = function() {
+                            // Forzar la inicialización de Flourish después de cargar el script
+                            setTimeout(() => {
+                                if (window.Flourish && window.Flourish.embed) {
+                                    window.Flourish.embed();
+                                }
+                            }, 500);
+                        };
+                        document.head.appendChild(script);
+                    } else {
+                        // Si el script ya está cargado, inicializar inmediatamente
+                        setTimeout(() => {
+                            if (window.Flourish && window.Flourish.embed) {
+                                window.Flourish.embed();
+                            }
+                        }, 100);
+                    }
+                }
+
+                layoutContainer.appendChild(textContent);
+                layoutContainer.appendChild(chartContent);
+                container.appendChild(layoutContainer);
+            } else {
+                // Layout normal (sin gráfico)
+                if (record.title) {
+                    var title = document.createElement('h3');
+                    title.innerText = record.title;
+                    chapter.appendChild(title);
+                }
+
+                if (record.image) {
+                    var image = new Image();
+                    image.src = record.image;
+                    chapter.appendChild(image);
+                }
+
+                if (record.description) {
+                    var story = document.createElement('p');
+                    story.innerHTML = record.description;
+                    chapter.appendChild(story);
+                }
+
+                chapter.classList.add(config.theme);
+                container.appendChild(chapter);
+            }
+
+            container.setAttribute('id', record.id);
+            container.classList.add('step');
+            if (idx === 0) {
+                container.classList.add('active');
+            }
+
+            if (!record.chart && !record.titleOnly && !record.chartOnly) {
+                container.classList.add(alignments[record.alignment] || 'centered');
+            } else if (record.titleOnly || record.chartOnly) {
+                container.classList.add('centered');
+            }
+            if (record.hidden) {
+                container.classList.add('hidden');
+            }
+            features.appendChild(container);
+        });
+
+        story.appendChild(features);
+
+        var footer = document.createElement('div');
+
+        if (config.footer) {
+            var footerText = document.createElement('p');
+            footerText.innerHTML = config.footer;
+            footer.appendChild(footerText);
+        }
+
+        if (footer.innerText.length > 0) {
+            footer.classList.add(config.theme);
+            footer.setAttribute('id', 'footer');
+            story.appendChild(footer);
+        }
+
+        mapboxgl.accessToken = config.accessToken;
+
+        var map = new mapboxgl.Map({
+            container: 'map',
+            style: config.style,
+            center: config.chapters[0].location.center,
+            zoom: config.chapters[0].location.zoom,
+            bearing: config.chapters[0].location.bearing,
+            pitch: config.chapters[0].location.pitch,
+            interactive: false,
+            projection: config.projection
+        });
+
+        // Create a inset map if enabled in config.js
+        if (config.inset) {
+            map.addControl(
+                new GlobeMinimap({ ...config.insetOptions }),
+                config.insetPosition
+            );
+        }
+
+        if (config.showMarkers) {
+            var marker = new mapboxgl.Marker({ color: config.markerColor });
+            marker.setLngLat(config.chapters[0].location.center).addTo(map);
+        }
+
+        // instantiate the scrollama
+        var scroller = scrollama();
+
+
+        map.on("load", function () {
+            if (config.use3dTerrain) {
+                map.addSource('mapbox-dem', {
+                    'type': 'raster-dem',
+                    'url': 'mapbox://mapbox.mapbox-terrain-dem-v1',
+                    'tileSize': 512,
+                    'maxzoom': 14
+                });
+                // add the DEM source as a terrain layer with exaggerated height
+                map.setTerrain({ 'source': 'mapbox-dem', 'exaggeration': 1.5 });
+
+                // add a sky layer that will show when the map is highly pitched
+                map.addLayer({
+                    'id': 'sky',
+                    'type': 'sky',
+                    'paint': {
+                        'sky-type': 'atmosphere',
+                        'sky-atmosphere-sun': [0.0, 0.0],
+                        'sky-atmosphere-sun-intensity': 15
+                    }
+                });
+            };
+
+            // setup the instance, pass callback functions
+            scroller
+                .setup({
+                    step: '.step',
+                    offset: 0.5,
+                    progress: true
+                })
+                .onStepEnter(async response => {
+                    var current_chapter = config.chapters.findIndex(chap => chap.id === response.element.id);
+                    var chapter = config.chapters[current_chapter];
+
+                    response.element.classList.add('active');
+                    map[chapter.mapAnimation || 'flyTo'](chapter.location);
+
+                    if (config.showMarkers) {
+                        marker.setLngLat(chapter.location.center);
+                    }
+                    if (chapter.onChapterEnter.length > 0) {
+                        chapter.onChapterEnter.forEach(setLayerOpacity);
+                    }
+                    if (chapter.callback) {
+                        window[chapter.callback]();
+                    }
+                    if (chapter.rotateAnimation) {
+                        map.once('moveend', () => {
+                            const rotateNumber = map.getBearing();
+                            map.rotateTo(rotateNumber + 180, {
+                                duration: 30000, easing: function (t) {
+                                    return t;
+                                }
+                            });
+                        });
+                    }
+                    if (config.auto) {
+                        var next_chapter = (current_chapter + 1) % config.chapters.length;
+                        map.once('moveend', () => {
+                            document.querySelectorAll('[data-scrollama-index="' + next_chapter.toString() + '"]')[0].scrollIntoView();
+                        });
+                    }
+                })
+                .onStepExit(response => {
+                    var chapter = config.chapters.find(chap => chap.id === response.element.id);
+                    response.element.classList.remove('active');
+                    if (chapter.onChapterExit.length > 0) {
+                        chapter.onChapterExit.forEach(setLayerOpacity);
+                    }
+                });
+
+
+            if (config.auto) {
+                document.querySelectorAll('[data-scrollama-index="0"]')[0].scrollIntoView();
+            }
+        });    
+
+    </script>
+
+</body>
+
+</html>
