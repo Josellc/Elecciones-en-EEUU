@@ -38,6 +38,7 @@ var config = {
             alignment: 'fully',
             hidden: false,
             title: 'Tu voto: ¿realmente cuenta?',
+            chart: 'assets/video.jpeg',
             description: `
       <p>
         Imagina que vas a votar en las elecciones presidenciales de Estados Unidos y te preguntas: ¿Realmente cuenta tu voto? A continuación te explicaremos cómo sale elegido el presidente de EEUU, conocerás qué es y cómo funciona el Colegio Electoral y cómo se lleva a cabo el proceso de votación.
